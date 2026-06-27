@@ -1,14 +1,21 @@
 // ===== script.js =====
-// LittleSummer · Kids Store — Complete E-Commerce Logic
+// LittleSummer · Kids Store — Complete E-Commerce with Cloudinary & Admin
 
 (function() {
   'use strict';
 
-  // ---------- CLOUDINARY BASE (public demo) ----------
-  const CLOUDINARY_BASE = 'https://res.cloudinary.com/demo/image/upload/w_500,h_500,c_fill,q_auto,f_auto/';
+  // ---------- CLOUDINARY CONFIG ----------
+  // Replace these with your own Cloudinary credentials
+  const CLOUDINARY = {
+    BASE_URL: 'https://res.cloudinary.com/demo/image/upload/',
+    // For demo, we use 'demo' cloud. To use your own:
+    // BASE_URL: 'https://res.cloudinary.com/YOUR_CLOUD_NAME/image/upload/',
+    UPLOAD_URL: 'https://api.cloudinary.com/v1_1/demo/image/upload',
+    UPLOAD_PRESET: 'ml_default' // Use unsigned upload preset
+  };
 
-  // ---------- PRODUCT CATALOG ----------
-  const PRODUCTS = [
+  // ---------- DEFAULT PRODUCTS ----------
+  const DEFAULT_PRODUCTS = [
     {
       id: 1,
       name: 'Graphic Dino T',
@@ -92,21 +99,26 @@
   ];
 
   // ---------- STATE ----------
-  let cart = []; // each item: { id, name, price, image, color, size, quantity }
-  let selectedProductId = null; // for detail view
+  let products = [];
+  let cart = [];
+  let nextProductId = 100;
+  let selectedProductId = null;
   let selectedColor = '';
   let selectedSize = '';
+  let isEditing = false;
 
   // DOM refs
   const productGrid = document.getElementById('productGrid');
   const detailPanel = document.getElementById('detailPanel');
   const detailContainer = document.getElementById('detailContainer');
   const orderPanel = document.getElementById('orderPanel');
+  const adminPanel = document.getElementById('adminPanel');
   const cartSidebar = document.getElementById('cartSidebar');
   const cartItemsList = document.getElementById('cartItemsList');
   const cartTotalPrice = document.getElementById('cartTotalPrice');
   const cartCountBadge = document.getElementById('cartCountBadge');
   const toast = document.getElementById('toast');
+  const adminProductList = document.getElementById('adminProductList');
 
   // ---------- HELPERS ----------
   function showToast(msg, duration = 2200) {
@@ -121,16 +133,77 @@
   }
 
   function getProductById(id) {
-    return PRODUCTS.find(p => p.id === id);
+    return products.find(p => p.id === id);
+  }
+
+  function getImageUrl(imagePath) {
+    return `${CLOUDINARY.BASE_URL}${imagePath}.jpg`;
+  }
+
+  // ---------- LOCAL STORAGE ----------
+  function saveProducts() {
+    localStorage.setItem('littleSummer_products', JSON.stringify(products));
+  }
+
+  function loadProducts() {
+    const saved = localStorage.getItem('littleSummer_products');
+    if (saved) {
+      try {
+        products = JSON.parse(saved);
+        // Ensure we have valid data
+        if (!products || !Array.isArray(products) || products.length === 0) {
+          products = JSON.parse(JSON.stringify(DEFAULT_PRODUCTS));
+        }
+      } catch (e) {
+        products = JSON.parse(JSON.stringify(DEFAULT_PRODUCTS));
+      }
+    } else {
+      products = JSON.parse(JSON.stringify(DEFAULT_PRODUCTS));
+    }
+    // Set next ID
+    const maxId = products.reduce((max, p) => Math.max(max, p.id), 0);
+    nextProductId = maxId + 1;
+    saveProducts();
+  }
+
+  function saveCart() {
+    localStorage.setItem('littleSummer_cart', JSON.stringify(cart));
+  }
+
+  function loadCart() {
+    const saved = localStorage.getItem('littleSummer_cart');
+    if (saved) {
+      try {
+        cart = JSON.parse(saved);
+        if (!Array.isArray(cart)) cart = [];
+      } catch (e) {
+        cart = [];
+      }
+    } else {
+      cart = [];
+    }
   }
 
   // ---------- RENDER PRODUCTS ----------
   function renderProducts() {
-    productGrid.innerHTML = PRODUCTS.map(p => {
-      const imgUrl = `${CLOUDINARY_BASE}${p.image}.jpg`;
+    if (!productGrid) return;
+    
+    if (products.length === 0) {
+      productGrid.innerHTML = `
+        <div style="grid-column: 1/-1; text-align: center; padding: 3rem; color: #7d8d92;">
+          <i class="fas fa-box-open" style="font-size: 3rem; display: block; margin-bottom: 1rem;"></i>
+          No products available. Add some from the admin panel!
+        </div>
+      `;
+      return;
+    }
+
+    productGrid.innerHTML = products.map(p => {
+      const imgUrl = getImageUrl(p.image);
       return `
         <div class="product-card" data-id="${p.id}">
-          <img class="product-img" src="${imgUrl}" alt="${p.name}" loading="lazy" onerror="this.src='${CLOUDINARY_BASE}kids/default.jpg'" />
+          <img class="product-img" src="${imgUrl}" alt="${p.name}" loading="lazy" 
+               onerror="this.src='https://res.cloudinary.com/demo/image/upload/w_400,h_400,c_fill,q_auto,f_auto/kids/default.jpg'" />
           <div class="product-name">${p.name}</div>
           <div class="product-category">${p.category}</div>
           <div class="product-price">${formatPrice(p.price)}</div>
@@ -156,7 +229,6 @@
         const id = parseInt(btn.dataset.id, 10);
         const product = getProductById(id);
         if (product) {
-          // Use first color and size as default for quick add
           const color = product.colors[0] || '#ccc';
           const size = product.sizes[0] || 'M';
           addToCart(product, color, size);
@@ -164,7 +236,6 @@
         }
       });
     });
-    // Click on card → open detail
     document.querySelectorAll('.product-card').forEach(card => {
       card.addEventListener('click', () => {
         const id = parseInt(card.dataset.id, 10);
@@ -176,19 +247,23 @@
   // ---------- DETAIL VIEW ----------
   function openDetail(id) {
     const product = getProductById(id);
-    if (!product) return;
+    if (!product) {
+      showToast('Product not found');
+      return;
+    }
     selectedProductId = id;
     selectedColor = product.colors[0] || '#ccc';
     selectedSize = product.sizes[0] || 'M';
 
-    // Hide other panels, show detail
     document.getElementById('productsSection').style.display = 'none';
     orderPanel.style.display = 'none';
+    adminPanel.style.display = 'none';
     detailPanel.style.display = 'block';
 
-    const imgUrl = `${CLOUDINARY_BASE}${product.image}.jpg`;
+    const imgUrl = getImageUrl(product.image);
     detailContainer.innerHTML = `
-      <img class="detail-img" src="${imgUrl}" alt="${product.name}" onerror="this.src='${CLOUDINARY_BASE}kids/default.jpg'" />
+      <img class="detail-img" src="${imgUrl}" alt="${product.name}" 
+           onerror="this.src='https://res.cloudinary.com/demo/image/upload/w_400,h_400,c_fill,q_auto,f_auto/kids/default.jpg'" />
       <div class="detail-info">
         <h2>${product.name}</h2>
         <div class="detail-category">${product.category}</div>
@@ -220,7 +295,6 @@
       </div>
     `;
 
-    // Color selection
     document.querySelectorAll('.color-swatch').forEach(el => {
       el.addEventListener('click', () => {
         document.querySelectorAll('.color-swatch').forEach(s => s.classList.remove('active'));
@@ -229,7 +303,6 @@
       });
     });
 
-    // Size selection
     document.querySelectorAll('.size-btn').forEach(el => {
       el.addEventListener('click', () => {
         document.querySelectorAll('.size-btn').forEach(s => s.classList.remove('active'));
@@ -238,13 +311,11 @@
       });
     });
 
-    // Add from detail
     document.getElementById('detailAddBtn').addEventListener('click', () => {
       addToCart(product, selectedColor, selectedSize);
       showToast(`✅ ${product.name} (${selectedSize}, ${selectedColor}) added`);
     });
 
-    // Close detail
     document.getElementById('backFromDetail').addEventListener('click', closeDetail);
   }
 
@@ -256,7 +327,6 @@
 
   // ---------- CART ----------
   function addToCart(product, color, size) {
-    // Check if same product with same color & size exists → increase quantity
     const existing = cart.find(item => 
       item.id === product.id && item.color === color && item.size === size
     );
@@ -273,16 +343,19 @@
         quantity: 1
       });
     }
+    saveCart();
     updateCartUI();
   }
 
   function removeFromCart(index) {
     cart.splice(index, 1);
+    saveCart();
     updateCartUI();
   }
 
   function clearCart() {
     cart = [];
+    saveCart();
     updateCartUI();
     showToast('🗑️ Cart cleared');
   }
@@ -296,7 +369,6 @@
   }
 
   function updateCartUI() {
-    // Cart items list
     if (cart.length === 0) {
       cartItemsList.innerHTML = `<div class="empty-cart-msg">🛒 Cart is empty</div>`;
     } else {
@@ -320,31 +392,24 @@
       });
     }
 
-    // Total & badge
     const total = getCartTotal();
     cartTotalPrice.textContent = formatPrice(total);
     const count = getTotalItems();
     cartCountBadge.textContent = count;
   }
 
-  // ---------- ORDER / CHECKOUT ----------
+  // ---------- ORDER ----------
   function openOrderPanel() {
     if (cart.length === 0) {
       showToast('🛒 Cart is empty. Add some items first!');
       return;
     }
-    // Close cart sidebar
     cartSidebar.classList.remove('open');
-
-    // Show order panel
     document.getElementById('productsSection').style.display = 'none';
     detailPanel.style.display = 'none';
+    adminPanel.style.display = 'none';
     orderPanel.style.display = 'block';
-
-    // Update order total
     document.getElementById('orderTotalDisplay').textContent = formatPrice(getCartTotal());
-
-    // Pre-fill any previous values? Keep it clean.
     document.getElementById('orderForm').reset();
     document.querySelectorAll('.error-msg').forEach(el => el.textContent = '');
   }
@@ -354,7 +419,6 @@
     document.getElementById('productsSection').style.display = 'block';
   }
 
-  // ---------- FORM VALIDATION ----------
   function validateOrderForm() {
     let valid = true;
     const name = document.getElementById('fullName').value.trim();
@@ -365,7 +429,6 @@
     const phoneError = document.getElementById('phoneError');
     const addressError = document.getElementById('addressError');
 
-    // Name
     if (name.length < 2) {
       nameError.textContent = 'Please enter full name (min 2 chars)';
       valid = false;
@@ -373,7 +436,6 @@
       nameError.textContent = '';
     }
 
-    // Phone (simple: at least 10 digits)
     const phoneDigits = phone.replace(/\D/g, '');
     if (phoneDigits.length < 10) {
       phoneError.textContent = 'Enter a valid phone number (at least 10 digits)';
@@ -382,7 +444,6 @@
       phoneError.textContent = '';
     }
 
-    // Address
     if (address.length < 5) {
       addressError.textContent = 'Please enter a complete address';
       valid = false;
@@ -393,7 +454,6 @@
     return valid;
   }
 
-  // ---------- PLACE ORDER ----------
   function placeOrder(e) {
     e.preventDefault();
     if (!validateOrderForm()) {
@@ -407,25 +467,272 @@
     const notes = document.getElementById('orderNotes').value.trim();
     const total = getCartTotal();
 
-    // Simulate order placement
-    showToast(`✅ Order placed! ${name}, pay ${formatPrice(total)} on delivery. Thank you!`, 3500);
+    // Save order to history
+    const order = {
+      id: Date.now(),
+      date: new Date().toISOString(),
+      customer: { name, phone, address, notes },
+      items: JSON.parse(JSON.stringify(cart)),
+      total: total,
+      status: 'pending'
+    };
+    
+    const orders = JSON.parse(localStorage.getItem('littleSummer_orders') || '[]');
+    orders.push(order);
+    localStorage.setItem('littleSummer_orders', JSON.stringify(orders));
 
-    // Clear cart & reset
+    showToast(`✅ Order placed! ${name}, pay ${formatPrice(total)} on delivery. Thank you!`, 3500);
+    
     cart = [];
+    saveCart();
     updateCartUI();
     closeOrderPanel();
-    // Also close detail if open
     detailPanel.style.display = 'none';
     document.getElementById('productsSection').style.display = 'block';
-
-    // Log order (for demo)
-    console.log('📦 ORDER:', { name, phone, address, notes, total, items: cart });
   }
 
-  // ---------- EVENT BINDING ----------
+  // ---------- ADMIN ----------
+  function openAdminPanel() {
+    document.getElementById('productsSection').style.display = 'none';
+    detailPanel.style.display = 'none';
+    orderPanel.style.display = 'none';
+    adminPanel.style.display = 'block';
+    renderAdminProductList();
+    resetAdminForm();
+  }
+
+  function closeAdminPanel() {
+    adminPanel.style.display = 'none';
+    document.getElementById('productsSection').style.display = 'block';
+    resetAdminForm();
+  }
+
+  function renderAdminProductList() {
+    if (products.length === 0) {
+      adminProductList.innerHTML = `
+        <div style="text-align: center; padding: 2rem; color: #7d8d92;">
+          No products yet. Add your first product above!
+        </div>
+      `;
+      return;
+    }
+
+    adminProductList.innerHTML = products.map(p => `
+      <div class="admin-product-item">
+        <div class="admin-item-info">
+          <img src="${getImageUrl(p.image)}" alt="${p.name}" style="width: 50px; height: 50px; object-fit: cover; border-radius: 12px;" 
+               onerror="this.src='https://res.cloudinary.com/demo/image/upload/w_50,h_50,c_fill,q_auto,f_auto/kids/default.jpg'" />
+          <div>
+            <strong>${p.name}</strong>
+            <span style="color: #7d8d92; font-size: 0.85rem; margin-left: 0.5rem;">${p.category}</span>
+            <span style="font-weight: 600; margin-left: 0.5rem;">${formatPrice(p.price)}</span>
+          </div>
+        </div>
+        <div class="admin-item-actions">
+          <button class="edit-product-btn" data-id="${p.id}"><i class="fas fa-edit"></i> Edit</button>
+          <button class="delete-product-btn" data-id="${p.id}"><i class="fas fa-trash"></i> Delete</button>
+        </div>
+      </div>
+    `).join('');
+
+    document.querySelectorAll('.edit-product-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const id = parseInt(btn.dataset.id, 10);
+        loadProductForEdit(id);
+      });
+    });
+
+    document.querySelectorAll('.delete-product-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const id = parseInt(btn.dataset.id, 10);
+        if (confirm('Are you sure you want to delete this product?')) {
+          deleteProduct(id);
+        }
+      });
+    });
+  }
+
+  function resetAdminForm() {
+    document.getElementById('adminFormTitle').textContent = 'Add New Product';
+    document.getElementById('editProductId').value = '';
+    document.getElementById('prodName').value = '';
+    document.getElementById('prodCategory').value = 'T-Shirt';
+    document.getElementById('prodPrice').value = '';
+    document.getElementById('prodImage').value = '';
+    document.getElementById('prodDescription').value = '';
+    document.getElementById('prodColors').value = '';
+    document.getElementById('prodSizes').value = '';
+    isEditing = false;
+    document.querySelector('.cancel-edit-btn').style.display = 'none';
+  }
+
+  function loadProductForEdit(id) {
+    const product = getProductById(id);
+    if (!product) return;
+
+    isEditing = true;
+    document.getElementById('adminFormTitle').textContent = 'Edit Product';
+    document.getElementById('editProductId').value = product.id;
+    document.getElementById('prodName').value = product.name;
+    document.getElementById('prodCategory').value = product.category;
+    document.getElementById('prodPrice').value = product.price;
+    document.getElementById('prodImage').value = product.image;
+    document.getElementById('prodDescription').value = product.description;
+    document.getElementById('prodColors').value = product.colors.join(', ');
+    document.getElementById('prodSizes').value = product.sizes.join(', ');
+    document.querySelector('.cancel-edit-btn').style.display = 'inline-block';
+    
+    // Scroll to form
+    document.querySelector('.admin-form-container').scrollIntoView({ behavior: 'smooth' });
+  }
+
+  function saveProductFromForm(e) {
+    e.preventDefault();
+    
+    const name = document.getElementById('prodName').value.trim();
+    const category = document.getElementById('prodCategory').value;
+    const price = parseInt(document.getElementById('prodPrice').value);
+    const image = document.getElementById('prodImage').value.trim();
+    const description = document.getElementById('prodDescription').value.trim();
+    const colorsStr = document.getElementById('prodColors').value.trim();
+    const sizesStr = document.getElementById('prodSizes').value.trim();
+
+    // Validation
+    if (!name || !price || !image || !description || !colorsStr || !sizesStr) {
+      showToast('⚠️ Please fill in all fields');
+      return;
+    }
+
+    const colors = colorsStr.split(',').map(c => c.trim()).filter(c => c);
+    const sizes = sizesStr.split(',').map(s => s.trim()).filter(s => s);
+
+    if (colors.length === 0 || sizes.length === 0) {
+      showToast('⚠️ Please enter at least one color and size');
+      return;
+    }
+
+    const editId = document.getElementById('editProductId').value;
+    
+    if (editId) {
+      // Edit existing
+      const index = products.findIndex(p => p.id === parseInt(editId));
+      if (index !== -1) {
+        products[index] = {
+          ...products[index],
+          name,
+          category,
+          price,
+          image,
+          description,
+          colors,
+          sizes
+        };
+        showToast('✅ Product updated successfully!');
+      }
+    } else {
+      // Add new
+      const newProduct = {
+        id: nextProductId++,
+        name,
+        category,
+        price,
+        image,
+        description,
+        colors,
+        sizes
+      };
+      products.push(newProduct);
+      showToast('✅ Product added successfully!');
+    }
+
+    saveProducts();
+    renderProducts();
+    renderAdminProductList();
+    resetAdminForm();
+  }
+
+  function deleteProduct(id) {
+    products = products.filter(p => p.id !== id);
+    saveProducts();
+    renderProducts();
+    renderAdminProductList();
+    showToast('🗑️ Product deleted');
+  }
+
+  // ---------- CLOUDINARY IMAGE UPLOAD ----------
+  async function uploadImageToCloudinary(file) {
+    const formData = new FormData();
+    formData.append('file', file);
+    formData.append('upload_preset', CLOUDINARY.UPLOAD_PRESET);
+
+    try {
+      const response = await fetch(CLOUDINARY.UPLOAD_URL, {
+        method: 'POST',
+        body: formData
+      });
+      const data = await response.json();
+      if (data.public_id) {
+        return data.public_id;
+      } else {
+        throw new Error('Upload failed');
+      }
+    } catch (error) {
+      console.error('Cloudinary upload error:', error);
+      showToast('⚠️ Image upload failed. Please try again.');
+      return null;
+    }
+  }
+
+  // Add image upload functionality to admin form
+  function setupImageUpload() {
+    const imageInput = document.getElementById('prodImage');
+    const uploadBtn = document.createElement('button');
+    uploadBtn.type = 'button';
+    uploadBtn.className = 'upload-image-btn';
+    uploadBtn.innerHTML = '<i class="fas fa-cloud-upload-alt"></i> Upload Image';
+    uploadBtn.style.cssText = `
+      background: #e07c3c;
+      color: white;
+      border: none;
+      padding: 0.5rem 1.2rem;
+      border-radius: 60px;
+      font-weight: 600;
+      cursor: pointer;
+      margin-top: 0.5rem;
+      display: inline-block;
+    `;
+
+    const fileInput = document.createElement('input');
+    fileInput.type = 'file';
+    fileInput.accept = 'image/*';
+    fileInput.style.display = 'none';
+
+    uploadBtn.addEventListener('click', () => fileInput.click());
+    fileInput.addEventListener('change', async (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+      
+      showToast('⏳ Uploading image...');
+      const publicId = await uploadImageToCloudinary(file);
+      if (publicId) {
+        document.getElementById('prodImage').value = publicId;
+        showToast('✅ Image uploaded! Public ID added.');
+      }
+      fileInput.value = '';
+    });
+
+    const parent = imageInput.parentElement;
+    parent.appendChild(fileInput);
+    parent.appendChild(uploadBtn);
+  }
+
+  // ---------- INIT ----------
   function init() {
+    loadProducts();
+    loadCart();
     renderProducts();
     updateCartUI();
+    setupImageUpload();
 
     // Cart toggle
     document.getElementById('cartToggleBtn').addEventListener('click', () => {
@@ -438,7 +745,7 @@
     // Clear cart
     document.getElementById('clearCartBtn').addEventListener('click', clearCart);
 
-    // Checkout → order panel
+    // Checkout
     document.getElementById('checkoutBtn').addEventListener('click', () => {
       cartSidebar.classList.remove('open');
       openOrderPanel();
@@ -450,7 +757,21 @@
     // Order form submit
     document.getElementById('orderForm').addEventListener('submit', placeOrder);
 
-    // Close cart on outside click (simple)
+    // Admin toggle
+    document.getElementById('adminToggle').addEventListener('click', () => {
+      if (adminPanel.style.display === 'block') {
+        closeAdminPanel();
+      } else {
+        openAdminPanel();
+      }
+    });
+    document.getElementById('backFromAdmin').addEventListener('click', closeAdminPanel);
+
+    // Admin form submit
+    document.getElementById('adminProductForm').addEventListener('submit', saveProductFromForm);
+    document.getElementById('cancelEdit').addEventListener('click', resetAdminForm);
+
+    // Close cart on outside click
     document.addEventListener('click', (e) => {
       if (cartSidebar.classList.contains('open')) {
         if (!cartSidebar.contains(e.target) && e.target.id !== 'cartToggleBtn') {
@@ -459,18 +780,22 @@
       }
     });
 
-    // Keyboard shortcuts: ESC to close cart
+    // ESC key
     document.addEventListener('keydown', (e) => {
       if (e.key === 'Escape') {
         cartSidebar.classList.remove('open');
+        if (adminPanel.style.display === 'block') closeAdminPanel();
+        if (detailPanel.style.display === 'block') closeDetail();
+        if (orderPanel.style.display === 'block') closeOrderPanel();
       }
     });
 
-    // If detail is open and we click back from order, ensure detail is hidden
-    // Already handled by closeOrderPanel
+    console.log('🛍️ LittleSummer Store initialized!');
+    console.log('📦 Products:', products.length);
+    console.log('🛒 Cart items:', cart.length);
   }
 
-  // Run when DOM ready
+  // Run
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', init);
   } else {
