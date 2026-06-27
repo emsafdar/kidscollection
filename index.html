@@ -1,576 +1,120 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Little Summer · Kids Store</title>
-  <!-- Font Awesome for icons -->
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
-  <style>
-    * {
-      margin: 0;
-      padding: 0;
-      box-sizing: border-box;
-      font-family: 'Segoe UI', Roboto, system-ui, sans-serif;
-    }
-
-    body {
-      background: #fef9f4;
-      color: #1e2b2f;
-      padding: 1.5rem;
-    }
-
-    .container {
-      max-width: 1300px;
-      margin: 0 auto;
-    }
-
-    /* header & cart */
-    .top-bar {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      flex-wrap: wrap;
-      margin-bottom: 2rem;
-      background: white;
-      padding: 1rem 2rem;
-      border-radius: 60px;
-      box-shadow: 0 6px 18px rgba(0,0,0,0.04);
-    }
-
-    .logo h1 {
-      font-size: 1.9rem;
-      letter-spacing: -0.5px;
-      background: linear-gradient(145deg, #f9b042, #f58a3c);
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-      background-clip: text;
-    }
-    .logo span {
-      font-weight: 300;
-      font-size: 1rem;
-      background: none;
-      -webkit-text-fill-color: #6b7a7f;
-      margin-left: 6px;
-    }
-
-    .cart-icon {
-      font-size: 1.8rem;
-      background: #f2eee9;
-      padding: 0.6rem 1.4rem;
-      border-radius: 60px;
-      cursor: default;
-      display: flex;
-      align-items: center;
-      gap: 0.8rem;
-      box-shadow: 0 2px 6px rgba(0,0,0,0.02);
-    }
-    .cart-icon i {
-      color: #e07c3c;
-    }
-    .cart-count {
-      background: #e07c3c;
-      color: white;
-      border-radius: 40px;
-      padding: 0.1rem 0.7rem;
-      font-size: 1rem;
-      font-weight: 600;
-    }
-
-    /* delivery badge */
-    .cod-badge {
-      background: #e6f3ed;
-      padding: 0.5rem 1.8rem;
-      border-radius: 60px;
-      display: inline-flex;
-      align-items: center;
-      gap: 0.7rem;
-      font-weight: 500;
-      color: #1f5a4b;
-      border: 1px solid #b8d9cc;
-      margin-bottom: 1.8rem;
-    }
-    .cod-badge i {
-      color: #1f8a6b;
-      font-size: 1.2rem;
-    }
-
-    /* product grid */
-    .products-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
-      gap: 2rem 1.6rem;
-      margin: 2rem 0 3rem;
-    }
-
-    .product-card {
-      background: white;
-      border-radius: 28px;
-      padding: 1.2rem 1rem 1.5rem;
-      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.04);
-      transition: all 0.2s ease;
-      display: flex;
-      flex-direction: column;
-      border: 1px solid #f0eae4;
-    }
-    .product-card:hover {
-      transform: translateY(-6px);
-      box-shadow: 0 16px 36px rgba(0, 0, 0, 0.06);
-      border-color: #e7d8cc;
-    }
-
-    .product-img {
-      width: 100%;
-      aspect-ratio: 1 / 1;
-      object-fit: cover;
-      border-radius: 20px;
-      background: #f4f0eb;
-      margin-bottom: 0.8rem;
-    }
-
-    .product-name {
-      font-weight: 600;
-      font-size: 1.2rem;
-      margin: 0.2rem 0 0.1rem;
-      color: #1e2b2f;
-    }
-
-    .product-category {
-      font-size: 0.8rem;
-      text-transform: uppercase;
-      letter-spacing: 0.5px;
-      color: #7d8d92;
-      margin-bottom: 0.6rem;
-    }
-
-    .price-cod {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-top: 0.3rem;
-    }
-
-    .price {
-      font-weight: 700;
-      font-size: 1.4rem;
-      color: #2b3f44;
-    }
-    .price small {
-      font-weight: 400;
-      font-size: 0.8rem;
-      color: #7b8b8f;
-      margin-left: 4px;
-    }
-
-    .cod-tag {
-      background: #dff0e9;
-      padding: 0.2rem 0.8rem;
-      border-radius: 30px;
-      font-size: 0.7rem;
-      font-weight: 600;
-      color: #1b6b55;
-      letter-spacing: 0.3px;
-      display: flex;
-      align-items: center;
-      gap: 4px;
-    }
-    .cod-tag i {
-      font-size: 0.6rem;
-    }
-
-    .add-btn {
-      margin-top: 1rem;
-      background: #f4ede7;
-      border: none;
-      padding: 0.7rem 0.6rem;
-      border-radius: 60px;
-      font-weight: 600;
-      font-size: 0.95rem;
-      color: #2d3e42;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 8px;
-      cursor: pointer;
-      transition: 0.15s;
-      border: 1px solid transparent;
-    }
-    .add-btn i {
-      color: #e07c3c;
-    }
-    .add-btn:hover {
-      background: #e07c3c;
-      color: white;
-      border-color: #d06d2a;
-    }
-    .add-btn:hover i {
-      color: white;
-    }
-
-    /* cart side panel */
-    .cart-panel {
-      background: white;
-      border-radius: 40px 40px 20px 20px;
-      padding: 1.8rem 1.8rem 2rem;
-      box-shadow: 0 10px 30px rgba(0,0,0,0.04);
-      margin: 2.5rem 0 1rem;
-      border: 1px solid #efe8e1;
-    }
-
-    .cart-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      border-bottom: 2px dashed #ded3c9;
-      padding-bottom: 0.8rem;
-      margin-bottom: 1.2rem;
-    }
-    .cart-header h3 {
-      font-weight: 500;
-      font-size: 1.5rem;
-    }
-    .cart-header h3 i {
-      color: #e07c3c;
-      margin-right: 8px;
-    }
-
-    .cart-items {
-      display: flex;
-      flex-direction: column;
-      gap: 0.8rem;
-      min-height: 70px;
-      max-height: 240px;
-      overflow-y: auto;
-      margin-bottom: 1.2rem;
-      padding-right: 4px;
-    }
-
-    .cart-item {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      background: #faf7f3;
-      padding: 0.5rem 1rem 0.5rem 1.2rem;
-      border-radius: 60px;
-      font-size: 0.95rem;
-    }
-    .cart-item span:first-child {
-      font-weight: 500;
-    }
-    .cart-item .item-price {
-      font-weight: 600;
-      color: #1f5a4b;
-    }
-    .cart-item .remove-item {
-      background: none;
-      border: none;
-      color: #b7a69a;
-      cursor: pointer;
-      font-size: 1.1rem;
-      padding: 0 6px;
-      transition: 0.1s;
-    }
-    .cart-item .remove-item:hover {
-      color: #c4513a;
-    }
-
-    .cart-total {
-      display: flex;
-      justify-content: space-between;
-      font-weight: 700;
-      font-size: 1.2rem;
-      border-top: 2px solid #ded3c9;
-      padding-top: 1rem;
-      margin-top: 0.2rem;
-    }
-
-    .checkout-area {
-      margin-top: 1.5rem;
-      display: flex;
-      flex-wrap: wrap;
-      align-items: center;
-      justify-content: space-between;
-      gap: 1rem;
-    }
-
-    .cash-btn {
-      background: #1f5a4b;
-      border: none;
-      padding: 0.9rem 2.2rem;
-      border-radius: 60px;
-      color: white;
-      font-weight: 600;
-      font-size: 1.1rem;
-      display: flex;
-      align-items: center;
-      gap: 12px;
-      cursor: pointer;
-      transition: 0.2s;
-      box-shadow: 0 4px 8px rgba(28, 94, 72, 0.15);
-      border: 1px solid #1a4d3f;
-    }
-    .cash-btn i {
-      font-size: 1.2rem;
-    }
-    .cash-btn:hover {
-      background: #124133;
-      transform: scale(1.01);
-    }
-
-    .clear-cart {
-      background: transparent;
-      border: 1px solid #d6c8bc;
-      padding: 0.6rem 1.6rem;
-      border-radius: 60px;
-      color: #5f6f73;
-      font-weight: 500;
-      cursor: pointer;
-      transition: 0.1s;
-    }
-    .clear-cart:hover {
-      background: #f3ede7;
-      border-color: #b8a89b;
-    }
-
-    .empty-cart-msg {
-      color: #8f9ea3;
-      font-style: italic;
-      padding: 0.6rem 0;
-    }
-
-    footer {
-      margin-top: 3rem;
-      text-align: center;
-      color: #7b8b8f;
-      font-size: 0.9rem;
-      border-top: 1px solid #e4dad2;
-      padding-top: 2rem;
-    }
-
-    /* toast */
-    .toast {
-      background: #1e2b2f;
-      color: #f0f0eb;
-      padding: 0.6rem 1.4rem;
-      border-radius: 60px;
-      position: fixed;
-      bottom: 20px;
-      right: 20px;
-      font-weight: 500;
-      box-shadow: 0 6px 20px rgba(0,0,0,0.12);
-      opacity: 0;
-      transition: opacity 0.25s;
-      pointer-events: none;
-      z-index: 999;
-    }
-    .toast.show {
-      opacity: 1;
-    }
-  </style>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>LittleSummer · Kids' Store</title>
+  <!-- Font Awesome -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" />
+  <!-- Google Font (optional) -->
+  <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,400;14..32,500;14..32,600;14..32,700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="style.css" />
 </head>
 <body>
-<div class="container">
 
-  <!-- top bar -->
-  <header class="top-bar">
-    <div class="logo">
-      <h1>☀️ LittleSummer <span>kids</span></h1>
+  <div class="app-container" id="app">
+    <!-- ===== HEADER ===== -->
+    <header class="main-header">
+      <div class="logo">
+        <h1>☀️ LittleSummer <span>kids</span></h1>
+      </div>
+      <div class="header-actions">
+        <button class="cart-btn" id="cartToggleBtn" aria-label="Open cart">
+          <i class="fas fa-shopping-bag"></i>
+          <span class="cart-badge" id="cartCountBadge">0</span>
+        </button>
+      </div>
+    </header>
+
+    <!-- ===== COD BADGE ===== -->
+    <div class="cod-banner">
+      <i class="fas fa-truck"></i> Cash on Delivery · Free shipping 
+      <i class="fas fa-check-circle" style="margin-left: 8px; color: #1f8a6b;"></i>
     </div>
-    <div class="cart-icon">
-      <i class="fas fa-shopping-bag"></i>
-      <span class="cart-count" id="cartCount">0</span>
-    </div>
-  </header>
 
-  <!-- COD badge -->
-  <div class="cod-badge">
-    <i class="fas fa-truck"></i> Cash on Delivery · Free shipping
-    <i class="fas fa-check-circle" style="margin-left: 6px; color: #1f8a6b;"></i>
-  </div>
+    <!-- ===== MAIN CONTENT ===== -->
+    <main id="mainContent">
+      <!-- Products grid (rendered by JS) -->
+      <section class="products-section" id="productsSection">
+        <div class="section-header">
+          <h2>Summer collection</h2>
+          <p>👕 T-shirts · Jeans · Trousers</p>
+        </div>
+        <div class="products-grid" id="productGrid"></div>
+      </section>
 
-  <!-- product grid -->
-  <div class="products-grid" id="productGrid"></div>
+      <!-- Product detail panel (hidden by default) -->
+      <section class="detail-panel" id="detailPanel" style="display: none;">
+        <button class="back-btn" id="backFromDetail"><i class="fas fa-arrow-left"></i> Back</button>
+        <div class="detail-container" id="detailContainer"></div>
+      </section>
 
-  <!-- cart panel -->
-  <div class="cart-panel">
-    <div class="cart-header">
-      <h3><i class="fas fa-shopping-cart"></i> Your cart</h3>
-      <span style="font-size: 0.9rem; color:#7b8b8f;"><i class="fas fa-credit-card"></i> COD only</span>
-    </div>
-    <div class="cart-items" id="cartItems">
-      <div class="empty-cart-msg">🛒 Cart is empty, add some summer style!</div>
-    </div>
-    <div class="cart-total">
-      <span>Total</span>
-      <span id="cartTotal">₨ 0</span>
-    </div>
-    <div class="checkout-area">
-      <button class="cash-btn" id="checkoutBtn"><i class="fas fa-hand-holding-usd"></i> Place order (COD)</button>
-      <button class="clear-cart" id="clearCartBtn"><i class="fas fa-trash-alt"></i> Clear cart</button>
-    </div>
-  </div>
-
-  <footer>
-    ⛱️ Summer collection · pay when you receive · powered by Cloudinary
-  </footer>
-</div>
-
-<!-- toast -->
-<div id="toast" class="toast">✨ added to cart</div>
-
-<script>
-  (function() {
-    // ---------- Cloudinary image base ----------
-    // Using Cloudinary as requested. All images are fetched from Cloudinary.
-    // These are public demo images (kids summer wear) – you can replace with your own.
-    const CLOUDINARY_BASE = 'https://res.cloudinary.com/demo/image/upload/w_400,h_400,c_fill,q_auto,f_auto/';
-
-    // Product catalog – images from cloudinary (kids summer theme)
-    const PRODUCTS = [
-      { id: 1, name: 'Graphic Dino T', category: 'T-Shirt', price: 1299, image: 'kids/summer/t-shirt-dino' },
-      { id: 2, name: 'Striped Sailor Tee', category: 'T-Shirt', price: 1199, image: 'kids/summer/striped-sailor' },
-      { id: 3, name: 'Cargo Denim Jeans', category: 'Jeans', price: 1899, image: 'kids/summer/cargo-jeans' },
-      { id: 4, name: 'Lightweight Chino', category: 'Trousers', price: 1599, image: 'kids/summer/light-chino' },
-      { id: 5, name: 'Palm Print Shirt', category: 'T-Shirt', price: 1349, image: 'kids/summer/palm-print' },
-      { id: 6, name: 'Classic Blue Jeans', category: 'Jeans', price: 1699, image: 'kids/summer/blue-jeans' },
-      { id: 7, name: 'Linen Blend Trousers', category: 'Trousers', price: 1499, image: 'kids/summer/linen-trousers' },
-      { id: 8, name: 'Colorblock Tee', category: 'T-Shirt', price: 1099, image: 'kids/summer/colorblock-tee' },
-    ];
-
-    // ---------- state ----------
-    let cart = []; // array of { id, name, price, image }
-
-    // DOM elements
-    const productGrid = document.getElementById('productGrid');
-    const cartItemsEl = document.getElementById('cartItems');
-    const cartTotalEl = document.getElementById('cartTotal');
-    const cartCountEl = document.getElementById('cartCount');
-    const toast = document.getElementById('toast');
-    let toastTimeout;
-
-    // ---------- helpers ----------
-    function showToast(msg = '✨ added to cart') {
-      toast.textContent = msg;
-      toast.classList.add('show');
-      clearTimeout(toastTimeout);
-      toastTimeout = setTimeout(() => toast.classList.remove('show'), 2000);
-    }
-
-    // render product cards
-    function renderProducts() {
-      productGrid.innerHTML = PRODUCTS.map(p => {
-        // Cloudinary url: base + image path + .jpg (auto format)
-        const imgUrl = `${CLOUDINARY_BASE}${p.image}.jpg`;
-        return `
-          <div class="product-card" data-id="${p.id}">
-            <img class="product-img" src="${imgUrl}" alt="${p.name}" loading="lazy" onerror="this.src='https://res.cloudinary.com/demo/image/upload/w_400,h_400,c_fill,q_auto,f_auto/kids/default.jpg'">
-            <div class="product-name">${p.name}</div>
-            <div class="product-category">${p.category}</div>
-            <div class="price-cod">
-              <span class="price">₨ ${p.price} <small></small></span>
-              <span class="cod-tag"><i class="fas fa-circle-check"></i> COD</span>
+      <!-- Order / checkout panel (hidden by default) -->
+      <section class="order-panel" id="orderPanel" style="display: none;">
+        <button class="back-btn" id="backFromOrder"><i class="fas fa-arrow-left"></i> Back to cart</button>
+        <div class="order-container">
+          <h2><i class="fas fa-clipboard-list"></i> Complete your order</h2>
+          <p class="order-sub">Pay with Cash on Delivery — fill in your details</p>
+          <form id="orderForm" novalidate>
+            <div class="form-row">
+              <div class="form-group">
+                <label for="fullName">Full name *</label>
+                <input type="text" id="fullName" placeholder="e.g. Sara Ahmed" required />
+                <span class="error-msg" id="nameError"></span>
+              </div>
+              <div class="form-group">
+                <label for="phone">Phone number *</label>
+                <input type="tel" id="phone" placeholder="03xx-xxxxxxx" required />
+                <span class="error-msg" id="phoneError"></span>
+              </div>
             </div>
-            <button class="add-btn" data-id="${p.id}"><i class="fas fa-plus-circle"></i> Add to bag</button>
-          </div>
-        `;
-      }).join('');
+            <div class="form-group">
+              <label for="address">Delivery address *</label>
+              <input type="text" id="address" placeholder="Street, house, city" required />
+              <span class="error-msg" id="addressError"></span>
+            </div>
+            <div class="form-group">
+              <label for="orderNotes">Notes (optional)</label>
+              <textarea id="orderNotes" rows="2" placeholder="Any special instructions..."></textarea>
+            </div>
+            <div class="order-summary" id="orderSummary">
+              <span>Total: <strong id="orderTotalDisplay">₨ 0</strong></span>
+              <span class="cod-tag-form"><i class="fas fa-hand-holding-usd"></i> Cash on delivery</span>
+            </div>
+            <button type="submit" class="place-order-btn" id="placeOrderBtn">
+              <i class="fas fa-check-circle"></i> Place order (COD)
+            </button>
+          </form>
+        </div>
+      </section>
+    </main>
 
-      // attach add events
-      document.querySelectorAll('.add-btn').forEach(btn => {
-        btn.addEventListener('click', (e) => {
-          const id = parseInt(btn.dataset.id, 10);
-          const product = PRODUCTS.find(p => p.id === id);
-          if (product) {
-            addToCart(product);
-            showToast(`🛍️ ${product.name} added`);
-          }
-        });
-      });
-    }
+    <!-- ===== CART SIDEBAR ===== -->
+    <aside class="cart-sidebar" id="cartSidebar">
+      <div class="cart-header">
+        <h3><i class="fas fa-shopping-cart"></i> Your cart</h3>
+        <button class="close-cart" id="closeCartBtn"><i class="fas fa-times"></i></button>
+      </div>
+      <div class="cart-items" id="cartItemsList">
+        <div class="empty-cart-msg">🛒 Cart is empty</div>
+      </div>
+      <div class="cart-footer">
+        <div class="cart-total">
+          <span>Total</span>
+          <span id="cartTotalPrice">₨ 0</span>
+        </div>
+        <div class="cart-actions">
+          <button class="clear-cart-btn" id="clearCartBtn"><i class="fas fa-trash-alt"></i> Clear</button>
+          <button class="checkout-btn" id="checkoutBtn"><i class="fas fa-credit-card"></i> Checkout</button>
+        </div>
+      </div>
+    </aside>
 
-    // add to cart
-    function addToCart(product) {
-      // if already in cart, just increase quantity? but we keep it simple (no qty, just duplicate items)
-      // for better UX we allow duplicates (each click adds one)
-      cart.push({ 
-        id: product.id, 
-        name: product.name, 
-        price: product.price,
-        image: product.image 
-      });
-      updateCartUI();
-    }
+    <!-- ===== TOAST ===== -->
+    <div id="toast" class="toast"></div>
+  </div>
 
-    // remove item from cart by index
-    function removeFromCart(index) {
-      cart.splice(index, 1);
-      updateCartUI();
-    }
-
-    // clear cart
-    function clearCart() {
-      cart = [];
-      updateCartUI();
-      showToast('🗑️ Cart cleared');
-    }
-
-    // update UI: cart items, total, count
-    function updateCartUI() {
-      // cart items
-      if (cart.length === 0) {
-        cartItemsEl.innerHTML = `<div class="empty-cart-msg">🛒 Cart is empty, add some summer style!</div>`;
-      } else {
-        cartItemsEl.innerHTML = cart.map((item, idx) => `
-          <div class="cart-item">
-            <span>${item.name}</span>
-            <span class="item-price">₨ ${item.price}</span>
-            <button class="remove-item" data-index="${idx}"><i class="fas fa-times"></i></button>
-          </div>
-        `).join('');
-
-        // attach remove events
-        document.querySelectorAll('.remove-item').forEach(btn => {
-          btn.addEventListener('click', (e) => {
-            const index = parseInt(btn.dataset.index, 10);
-            removeFromCart(index);
-            showToast('🗑️ item removed');
-          });
-        });
-      }
-
-      // total
-      const total = cart.reduce((sum, item) => sum + item.price, 0);
-      cartTotalEl.textContent = `₨ ${total}`;
-      cartCountEl.textContent = cart.length;
-    }
-
-    // checkout (COD)
-    function checkout() {
-      if (cart.length === 0) {
-        showToast('🛒 Cart is empty!');
-        return;
-      }
-      const total = cart.reduce((sum, item) => sum + item.price, 0);
-      // simple order simulation
-      showToast(`✅ Order placed! Pay ₨ ${total} on delivery. Thank you!`);
-      // clear cart after "order"
-      cart = [];
-      updateCartUI();
-    }
-
-    // ---------- init ----------
-    renderProducts();
-    updateCartUI();
-
-    // event listeners
-    document.getElementById('checkoutBtn').addEventListener('click', checkout);
-    document.getElementById('clearCartBtn').addEventListener('click', clearCart);
-
-    // (optional) expose for debugging
-    window.__cart = cart;
-
-  })();
-</script>
-<!-- cloudinary fallback note: images are served from cloudinary demo account, all good -->
+  <!-- ===== SEPARATE JS ===== -->
+  <script src="script.js"></script>
 </body>
 </html>
